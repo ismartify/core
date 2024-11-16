@@ -1,35 +1,34 @@
 {
-  "name": "@ismartify/core",
+  "name": "@ismartify/common",
   "version": "1.0.0",
-  "description": "Ismartify Core",
+  "description": "Ismartify common",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "npx pkgroll",
+    "test": "vitest",
+    "build": "tsc -b tsconfig.json",
     "publish": "npm publish",
-    "git": "git add . && git commit -m 'update' && git push"
+    "git": "git add . && git commit -m 'update' && git push",
+    "clean": "tsc -b tsconfig.json --clean"
   },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.cts",
-  "exports": {
-    "require": {
-      "types": "./dist/index.d.cts",
-      "default": "./dist/index.cjs"
-    },
-    "import": {
-      "types": "./dist/index.d.mts",
-      "default": "./dist/index.mjs"
-    }
-  },
-  "keywords": [],
-  "author": "Ismartify",
-  "license": "ISC",
-  "private": false,
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
+  "dependencies": {
+    "@ismartify/benz": "workspace:*",
+    "@ismartify/core": "workspace:*",
+    "@ismartify/dun": "workspace:*",
+    "@ismartify/uri": "workspace:*",
+    "eta": "^3.5.0",
+    "ofetch": "^1.4.1",
+    "unstorage": "^1.13.1",
+    "urijs": "^1.19.11"
   },
   "devDependencies": {
-    "typescript": "^5.6.3"
+    "@types/node": "^22.9.0",
+    "@types/urijs": "^1.19.25",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.5"
+  },
+  "engines": {
+    "node": ">=16",
+    "pnpm": ">=7"
   }
 }

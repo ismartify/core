@@ -1,9 +1,13 @@
-
 name: 发布到npm
 
+#当有release时，创建release，并发布到npm
+
 on:
- release:
-    types: [created] 
+  push:
+    branches:
+      - main
+    tags:
+      - v*
 
 jobs:
   build:
@@ -17,9 +21,31 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  create-release:
+    needs: build
+    runs-on: ubuntu-latest
+    # 只在 main 分支推送时创建 release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: 获取版本号
+        id: package-version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+      - name: 创建 Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.package-version.outputs.version }}
+          name: Release v${{ steps.package-version.outputs.version }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   publish-npm:
     needs: build
     runs-on: ubuntu-latest
+    if: github.event_name == 'release'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
