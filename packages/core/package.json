@@ -6,10 +6,13 @@
   "main": "./src/index.ts",
   "scripts": {
     "test": "vitest",
-    "build": "npx pkgroll",
+    "build": "npx -y unbuild",
     "publish": "npm publish"
   },
   "keywords": [],
   "author": "ismartify@keepdb.com",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "unbuild": "^3.5.0"
+  }
 }
