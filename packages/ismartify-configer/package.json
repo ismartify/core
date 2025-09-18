@@ -1,0 +1,26 @@
+{
+  "name": "@ismartify/configer",
+  "version": "1.0.13",
+  "description": "",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "test": "vitest",
+    "build": "tsup",
+    "ver+": "npm version patch",
+    "npm:publish": "npm run ver+ && npm run build && npm publish --registry https://registry.npmjs.org/ --access public --no-git-checks"
+  },
+  "keywords": [],
+  "author": "ismartify@keepdb.com",
+  "license": "ISC",
+  "devDependencies": {
+    "tsup": "^8.5.0"
+  },
+  "dependencies": {
+    "@ismartify/mapstore": "^1.0.1"
+  }
+}

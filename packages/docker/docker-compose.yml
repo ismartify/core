@@ -1,0 +1,20 @@
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: ./ismartify/docker/Dockerfile
+    container_name: nuxt-builder
+    restart: "no"
+    working_dir: /app/src
+    volumes:
+      - ../..:/src
+      - ./:/docker
+      - pnpm-store:/root/.local/share/pnpm/store
+    entrypoint: ["/bin/sh", "-c", "cat /docker/build.sh | /bin/sh"]
+    environment:
+      - DEBUG=true
+      - SHELL=/bin/sh
+      
+volumes:
+  pnpm-store:
+  node_modules:

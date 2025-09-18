@@ -1,0 +1,46 @@
+{
+  "name": "@ismartify/qrcode",
+  "version": "1.0.5",
+  "description": "",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "package.json",
+    "README.md",
+    "llms.txt"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "tsup",
+    "ver+": "npm version patch",
+    "play": "tsx playground/index.ts",
+    "fixtures": "tsx generate-fixtures.ts",
+    "npm:publish": "npm run ver+ && npm run build && npm publish --registry https://registry.npmjs.org/ --access public --no-git-checks"
+  },
+  "keywords": [],
+  "author": "ismartify@keepdb.com",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/lodash": "^4.17.20",
+    "arktype": "^2.1.20",
+    "tsup": "^8.5.0",
+    "vitest": "^2.1.0"
+  },
+  "peerDependencies": {
+    "arktype": ">=2.0.0"
+  },
+  "dependencies": {
+    "@ismartify/mapstore": "^1.0.1"
+  }
+}

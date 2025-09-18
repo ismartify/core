@@ -1,0 +1,554 @@
+# @ismartify/arkstore - LLM Context Documentation
+
+## 项目概述
+
+**项目名称**: @ismartify/arkstore (发布名: @ismartify/mapstore)
+**版本**: 1.0.2
+**类型**: TypeScript/JavaScript 库
+**主要功能**: 基于 arktype + Map 实现的带类型校验和安全设置功能的 KV 存储管理类
+
+## 核心特性
+
+- 🔒 **类型安全**: 基于 arktype 提供强类型校验
+- 🚀 **高性能**: 使用 Map 作为底层存储，提供 O(1) 的读写性能
+- 🛡️ **安全设置**: 支持 defaultValue 安全机制，验证失败时自动使用默认值
+- 📝 **灵活配置**: 支持动态 schema 配置和验证规则
+- 🎯 **智能推断**: 自动推断数据类型并生成对应的 schema
+- 🔧 **扩展性**: 支持批量定义、对象扁平化等高级功能
+- 💡 **开发友好**: 提供丰富的调试和监控功能
+
+## 架构设计
+
+### 核心类结构
+
+```typescript
+export class ISmartifyArkStore {
+  #store: Map<string, any> = new Map();        // 数据存储
+  #schemas: Map<string, any> = new Map();      // Schema定义存储
+  #arktype: any;                               // arktype实例
+
+  constructor(arktype: any) {
+    this.#arktype = arktype;
+    this.#store.set("__namespace", "ismartify.arkstore");
+  }
+}
+```
+
+### 设计模式
+
+1. **Builder模式**: 支持链式调用
+2. **Strategy模式**: 智能判断参数类型，自动选择处理策略
+3. **Template模式**: 统一的验证和设置流程
+4. **Facade模式**: 简化arktype的使用复杂度
+
+## API 设计哲学
+
+### 1. 智能化API设计
+```typescript
+// define方法智能判断参数类型
+define(schemaOrKey?: object | string, schema?: object | string): this {
+  if (typeof schemaOrKey === "string") {
+    // 字符串参数：调用 defineByKey
+    return this.defineByKey(schemaOrKey, schema);
+  } else if (schemaOrKey && typeof schemaOrKey === "object") {
+    // 对象参数：调用 defineByObject
+    return this.defineByObject(schemaOrKey, schema);
+  }
+  return this;
+}
+```
+
+### 2. 安全优先设计
+```typescript
+// 三层安全机制
+#validateKeyValue(key: string, value: any, defaultValue?: any): any {
+  const schema = this.#schemas.get(key);
+  if (schema) {
+    const result = schema(value);
+    if (result && typeof result === 'object' && result.constructor.name === 'ArkErrors') {
+      if (defaultValue !== undefined) {
+        // 验证defaultValue
+        const defaultResult = schema(defaultValue);
+        if (defaultResult && typeof defaultResult === 'object' && defaultResult.constructor.name === 'ArkErrors') {
+          throw new Error(`Both value and defaultValue validation failed`);
+        }
+        return defaultResult;
+      }
+      throw new Error(`Validation failed for key "${key}"`);
+    }
+    return result;
+  }
+  return value; // 宽松模式
+}
+```
+
+### 3. 用户友好设计
+- 支持点路径访问: `user.profile.name`
+- 自动对象扁平化
+- 智能类型推断
+- 丰富的调试信息
+
+## 核心功能实现
+
+### 1. Schema定义系统
+
+#### defineByKey - 精确定义
+```typescript
+defineByKey(key: string, schema: object | string): this {
+  if (!key || !schema) {
+    throw new Error('defineByKey requires both key and schema parameters');
+  }
+  const compiledSchema = this.#arktype(schema);
+  this.#schemas.set(key, compiledSchema);
+  return this;
+}
+```
+
+#### defineByObject - 批量定义
+```typescript
+defineByObject(obj: object, schemaDefinition?: object | string, prefix = ''): this {
+  for (const [key, value] of Object.entries(obj)) {
+    const fullKey = prefix ? `${prefix}.${key}` : key;
+    
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      this.defineByObject(value, schemaDefinition, fullKey);
+    } else {
+      let finalSchema = schemaDefinition || this.#inferSchemaFromValue(value);
+      this.defineByKey(fullKey, finalSchema);
+    }
+  }
+  return this;
+}
+```
+
+#### 智能类型推断
+```typescript
+#inferSchemaFromValue(value: any): string {
+  if (typeof value === 'string') {
+    // 邮箱检测
+    if (value.includes('@') && value.includes('.')) {
+      return 'string.email';
+    }
+    return 'string';
+  }
+  if (typeof value === 'number') return 'number';
+  if (typeof value === 'boolean') return 'boolean';
+  if (Array.isArray(value)) {
+    if (value.length > 0) {
+      const firstItemType = this.#inferSchemaFromValue(value[0]);
+      return `${firstItemType}[]`;
+    }
+    return 'unknown[]';
+  }
+  return 'unknown';
+}
+```
+
+### 2. 数据操作系统
+
+#### 对象扁平化
+```typescript
+#flattenObject(obj: any, prefix = ""): Record<string, any> {
+  const flattened: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const newKey = prefix ? `${prefix}.${key}` : key;
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      Object.assign(flattened, this.#flattenObject(value, newKey));
+    } else {
+      flattened[newKey] = value;
+    }
+  }
+  return flattened;
+}
+```
+
+#### 安全设置机制
+```typescript
+set(keyOrObject: string | object, value?: any, defaultValue?: any): this {
+  if (typeof keyOrObject === "string") {
+    // 键值对方式
+    const validatedValue = this.#validateKeyValue(keyOrObject, value, defaultValue);
+    this.#store.set(keyOrObject, validatedValue);
+  } else if (keyOrObject && typeof keyOrObject === "object") {
+    // 对象方式：扁平化后批量验证
+    const flattened = this.#flattenObject(keyOrObject);
+    const objectDefaultValue = value;
+
+    const validatedEntries: [string, any][] = [];
+    for (const [key, val] of Object.entries(flattened)) {
+      const validatedValue = this.#validateKeyValue(key, val, objectDefaultValue);
+      validatedEntries.push([key, validatedValue]);
+    }
+
+    // 所有验证通过后再存储
+    for (const [key, val] of validatedEntries) {
+      this.#store.set(key, val);
+    }
+  }
+  return this;
+}
+```
+
+## 使用场景和模式
+
+### 1. 配置管理场景
+```typescript
+// 应用配置管理
+const configStore = new ISmartifyArkStore(type);
+
+// 定义配置结构
+const configTemplate = {
+  database: {
+    host: 'localhost',
+    port: 5432,
+    ssl: true
+  },
+  cache: {
+    ttl: 3600,
+    maxSize: 1000
+  },
+  api: {
+    timeout: 5000,
+    retries: 3
+  }
+};
+
+configStore.defineByObject(configTemplate);
+
+// 安全设置配置
+configStore.set('database.host', process.env.DB_HOST, 'localhost');
+configStore.set('database.port', parseInt(process.env.DB_PORT), 5432);
+```
+
+### 2. 用户数据管理
+```typescript
+// 用户数据管理
+const userStore = new ISmartifyArkStore(type);
+
+// 定义用户数据结构
+userStore.defineByKey('user.profile.name', 'string');
+userStore.defineByKey('user.profile.email', 'string.email');
+userStore.defineByKey('user.profile.age', 'number >= 18');
+userStore.defineByKey('user.settings.theme', '"light" | "dark"');
+userStore.defineByKey('user.settings.notifications', 'boolean');
+
+// 批量设置用户数据
+userStore.set({
+  user: {
+    profile: {
+      name: 'John Doe',
+      email: 'john@example.com',
+      age: 25
+    },
+    settings: {
+      theme: 'dark',
+      notifications: true
+    }
+  }
+});
+```
+
+### 3. 动态表单验证
+```typescript
+// 动态表单数据验证
+const formStore = new ISmartifyArkStore(type);
+
+// 根据表单配置动态定义验证规则
+const formConfig = {
+  username: { type: 'string', required: true },
+  email: { type: 'string.email', required: true },
+  age: { type: 'number >= 18', required: false },
+  role: { type: '"admin" | "user" | "guest"', required: true }
+};
+
+// 动态设置验证规则
+Object.entries(formConfig).forEach(([field, config]) => {
+  formStore.defineByKey(field, config.type);
+});
+
+// 验证表单数据
+const formData = {
+  username: 'johndoe',
+  email: 'john@example.com',
+  age: 25,
+  role: 'user'
+};
+
+// 使用安全设置，验证失败时使用默认值
+formStore.set('username', formData.username, 'anonymous');
+formStore.set('email', formData.email, 'noreply@example.com');
+formStore.set('age', formData.age, 18);
+formStore.set('role', formData.role, 'user');
+```
+
+## 测试策略和质量保证
+
+### 测试架构
+1. **core.test.ts** - 单元测试 (241行)
+   - API功能测试
+   - 边界条件测试
+   - 错误处理测试
+
+2. **jsonschema.vitest.test.ts** - 功能测试 (247行)
+   - JSON Schema转换功能
+   - 复杂类型处理
+   - 集成功能测试
+
+3. **readme-blackbox.test.ts** - 黑盒测试 (493行)
+   - 基于文档的用户场景测试
+   - 新手使用场景
+   - 常见错误处理
+
+### 测试覆盖的关键场景
+
+#### 1. 基础功能测试
+```typescript
+describe('实例创建', () => {
+  it('应该能够创建实例', () => {
+    expect(store).toBeInstanceOf(ISmartifyArkStore);
+  });
+
+  it('应该包含所有必需的方法', () => {
+    const expectedMethods = [
+      'defineByKey', 'define', 'defineByObject', 'set', 'get', 
+      'has', 'delete', 'clear', 'size', 'keys', 'values', 
+      'entries', 'raw', 'exec', 'debug', 'isArkType'
+    ];
+    
+    expectedMethods.forEach(method => {
+      expect(typeof store[method]).toBe('function');
+    });
+  });
+});
+```
+
+#### 2. 安全机制测试
+```typescript
+describe('安全设置机制', () => {
+  it('验证失败时应该使用默认值', () => {
+    store.defineByKey('user.email', 'string.email');
+    store.set('user.email', 'invalid-email', 'fallback@example.com');
+    expect(store.get('user.email')).toBe('fallback@example.com');
+  });
+
+  it('defaultValue 本身验证失败应该抛出错误', () => {
+    expect(() => {
+      store.set('user.email', 'invalid', 'also-invalid');
+    }).toThrow('Both value and defaultValue validation failed');
+  });
+});
+```
+
+#### 3. 复杂场景测试
+```typescript
+describe('复杂嵌套 Schema', () => {
+  it('应该支持复杂的嵌套 schema 验证', () => {
+    const complexSchema = store.createCompositeSchema({
+      user: {
+        name: 'string',
+        email: 'string.email',
+        age: 'number >= 18',
+        roles: 'string[]',
+        'profile?': {
+          bio: 'string',
+          avatar: 'string',
+          social: {
+            github: 'string',
+            twitter: 'string'
+          }
+        }
+      },
+      config: {
+        theme: '"light" | "dark"',
+        notifications: 'boolean',
+        'advanced?': {
+          debugMode: 'boolean',
+          logLevel: '"info" | "warn" | "error"'
+        }
+      }
+    });
+    
+    expect(complexSchema.type).toBe('object');
+    expect(complexSchema.properties.user).toBeDefined();
+    expect(complexSchema.properties.config).toBeDefined();
+  });
+});
+```
+
+#### 4. 新手错误场景测试
+```typescript
+describe('新手常见错误场景', () => {
+  it('应该允许没有 schema 时设置数据（宽松模式）', () => {
+    // 新手可能会忘记定义 schema 直接设置数据
+    store.set('undefined.key', 'some value');
+    expect(store.get('undefined.key')).toBe('some value');
+  });
+
+  it('应该支持链式调用', () => {
+    const result = store
+      .defineByKey('chain.test1', 'string')
+      .defineByKey('chain.test2', 'number')
+      .set('chain.test1', 'value1')
+      .set('chain.test2', 42)
+      .debug();
+    
+    expect(result).toBe(store);
+  });
+});
+```
+
+## 性能特性
+
+### 时间复杂度
+- **get操作**: O(1) - 直接Map查找
+- **set操作**: O(1) - 单个键值对设置
+- **has操作**: O(1) - Map.has()
+- **delete操作**: O(1) - Map.delete()
+- **defineByObject**: O(n) - n为对象属性数量
+
+### 空间复杂度
+- **存储空间**: O(n) - n为存储的键值对数量
+- **Schema空间**: O(m) - m为定义的schema数量
+- **内存优化**: 使用Map而非普通对象，避免原型链查找
+
+### 性能优化策略
+1. **批量操作**: 支持对象方式批量设置
+2. **延迟验证**: 只在需要时进行类型验证
+3. **缓存机制**: Schema编译后缓存复用
+4. **内存管理**: 提供clear方法释放内存
+
+## 扩展能力
+
+### JSON Schema 支持
+通过 `ISmartifyArkJsonSchema` 类扩展：
+
+```typescript
+export class ISmartifyArkJsonSchema extends ISmartifyArkStore {
+  // 转换为JSON Schema
+  toJSONSchema(key?: string): any;
+  
+  // 创建复合Schema
+  createCompositeSchema(schemaDefinition: any): any;
+  
+  // 获取完整JSON Schema文档
+  getFullJSONSchema(title?: string, description?: string): any;
+  
+  // 导出JSON Schema字符串
+  exportJSONSchema(pretty?: boolean): string;
+}
+```
+
+### 类型映射系统
+```typescript
+// 自动类型推断映射
+const TYPE_MAPPINGS = {
+  'string': { type: 'string' },
+  'number': { type: 'number' },
+  'boolean': { type: 'boolean' },
+  'string.email': { type: 'string', format: 'email' },
+  'string[]': { type: 'array', items: { type: 'string' } }
+};
+```
+
+## 最佳实践
+
+### 1. Schema定义策略
+```typescript
+// ✅ 推荐：使用 defineByKey 精确定义
+store.defineByKey('user.email', 'string.email');
+store.defineByKey('app.config.timeout', 'number');
+
+// ✅ 推荐：使用 defineByObject 快速建立基础结构
+const template = { user: { name: 'John', age: 30 } };
+store.defineByObject(template);
+
+// ❌ 避免：没有 schema 的情况下设置复杂数据
+store.set('user.profile.complex', someComplexObject);
+```
+
+### 2. 安全设置使用
+```typescript
+// ✅ 推荐：为关键字段提供合理的默认值
+store.defineByKey('config.timeout', 'number');
+store.set('config.timeout', userInput, 5000);
+
+// ✅ 推荐：确保 defaultValue 符合 schema 要求
+store.defineByKey('user.age', 'number');
+store.set('user.age', 'invalid', 18);
+
+// ❌ 避免：defaultValue 也不符合 schema
+store.set('user.age', 'invalid', 'also-invalid');
+```
+
+### 3. 性能优化
+```typescript
+// ✅ 推荐：批量操作使用对象方式
+store.set({
+  'user.name': 'John',
+  'user.email': 'john@example.com',
+  'user.age': 30
+});
+
+// ❌ 避免：频繁的单个设置
+store.set('user.name', 'John');
+store.set('user.email', 'john@example.com');
+store.set('user.age', 30);
+```
+
+## 依赖和环境
+
+### 核心依赖
+- **arktype**: >=2.0.0 (peerDependency)
+- **TypeScript**: 支持ES6+语法
+- **Node.js**: 支持ES Module
+
+### 开发依赖
+- **vitest**: 测试框架
+- **tsup**: 构建工具
+- **tsx**: TypeScript执行器
+
+### 构建配置
+```json
+{
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  }
+}
+```
+
+## 发布和版本管理
+
+### NPM发布配置
+```json
+{
+  "scripts": {
+    "npm:publish": "npm run ver+ && npm run build && npm publish --registry https://registry.npmjs.org/ --access public --no-git-checks"
+  }
+}
+```
+
+### 版本策略
+- 使用语义化版本控制
+- 当前版本: 1.0.2
+- 发布到npm官方源
+- 使用 `--access public` 发布作用域包
+
+## 总结
+
+@ismartify/arkstore 是一个设计精良的类型安全KV存储库，具有以下核心价值：
+
+1. **类型安全**: 基于arktype提供强类型校验
+2. **用户友好**: 智能API设计，支持多种使用模式
+3. **安全可靠**: 三层安全机制，防止数据错误
+4. **性能优秀**: O(1)操作复杂度，高效的内存使用
+5. **扩展性强**: 支持JSON Schema导出，便于集成
+6. **测试完善**: 三层测试架构，覆盖全面的使用场景
+
+该库适用于配置管理、用户数据存储、表单验证等多种场景，是TypeScript项目中处理结构化数据的优秀选择。

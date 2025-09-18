@@ -1,34 +1,36 @@
 {
-  "name": "@ismartify/common",
+  "name": "ismartify-libs",
   "version": "1.0.0",
   "description": "Ismartify common",
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "vitest",
+    "packages": "dotenv -- pnpm --filter",
+    "test": "pnpm packages @workspace/test test",
     "build": "tsc -b tsconfig.json",
     "publish": "npm publish",
     "git": "git add . && git commit -m 'update' && git push",
-    "clean": "tsc -b tsconfig.json --clean"
-  },
-  "dependencies": {
-    "@ismartify/benz": "workspace:*",
-    "@ismartify/core": "workspace:*",
-    "@ismartify/dun": "workspace:*",
-    "@ismartify/uri": "workspace:*",
-    "eta": "^3.5.0",
-    "ofetch": "^1.4.1",
-    "unstorage": "^1.13.1",
-    "urijs": "^1.19.11"
+    "clean": "tsc -b tsconfig.json --clean",
+    "common": "pnpm packages @ismartify/common",
+    "npm:login": "npm login --registry https://registry.npmjs.org/"
   },
   "devDependencies": {
-    "@types/node": "^22.9.0",
+    "@types/node": "^24.1.0",
     "@types/urijs": "^1.19.25",
+    "dotenv-cli": "^8.0.0",
+    "tsup": "^8.5.0",
     "typescript": "^5.6.3",
-    "vitest": "^2.1.5"
+    "vitest": "^3.2.4"
   },
   "engines": {
     "node": ">=16",
     "pnpm": ">=7"
-  }
+  },
+  "dependencies": {
+    "arktype": "^2.1.20",
+    "c12": "^3.1.0",
+    "glob": "^11.0.3",
+    "handlebars": "^4.7.8"
+  },
+  "packageManager": "pnpm@10.0.0+sha512.b8fef5494bd3fe4cbd4edabd0745df2ee5be3e4b0b8b08fa643aa3e4c6702ccc0f00d68fa8a8c9858a735a0032485a44990ed2810526c875e416f001b17df12b"
 }

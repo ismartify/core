@@ -1,0 +1,36 @@
+{
+  "name": "@ismartify/template",
+  "version": "1.0.13",
+  "description": "",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "package.json"
+  ],
+  "scripts": {
+    "test": "vitest",
+    "build": "tsup",
+    "ver+": "npm version patch",
+    "npm:publish": "npm run ver+ && npm run build && npm publish --registry https://registry.npmjs.org/ --access public --no-git-checks"
+  },
+  "keywords": [],
+  "author": "ismartify@keepdb.com",
+  "license": "ISC",
+  "devDependencies": {
+    "tsup": "^8.5.0"
+  },
+  "dependencies": {
+    "@ismartify/common": "^1.0.13",
+    "handlebars": "^4.7.8"
+  }
+}

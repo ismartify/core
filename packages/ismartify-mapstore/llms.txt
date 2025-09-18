@@ -1,0 +1,272 @@
+================
+CODE SNIPPETS
+================
+
+TITLE: Creating a MapStore Instance (TypeScript)
+DESCRIPTION: This TypeScript snippet demonstrates how to create a new ISmartifyMapStore instance and perform basic operations. The constructor automatically sets a namespace to prevent naming conflicts.
+
+SOURCE: https://github.com/ismartify/core/packages/ismartify-mapstore/src/index.ts
+
+LANGUAGE: typescript
+CODE:
+```typescript
+import { ISmartifyMapStore } from '@ismartify/mapstore';
+
+// Create a new MapStore instance
+const store = new ISmartifyMapStore();
+
+// Basic operations
+store
+  .set('user', { name: 'John', age: 30 })
+  .set('config', { theme: 'dark' })
+  .set('count', 0);
+
+// Check namespace (automatically set)
+console.log(store.get('__namespace')); // 'ismartify.mapstore'
+```
+
+--------------------------------
+
+TITLE: Chainable Set and Get Operations (TypeScript)
+DESCRIPTION: This snippet shows how to use the chainable set method and get method with default values. The set method returns 'this' to enable fluent interface.
+
+SOURCE: https://github.com/ismartify/core/packages/ismartify-mapstore/src/index.ts
+
+LANGUAGE: typescript
+CODE:
+```typescript
+// Chainable set operations
+store
+  .set('user.name', 'Alice')
+  .set('user.age', 25)
+  .set('settings.theme', 'light')
+  .set('settings.language', 'zh-CN');
+
+// Get values with defaults
+const userName = store.get('user.name'); // 'Alice'
+const email = store.get('user.email', 'default@email.com'); // default value
+const theme = store.get('settings.theme', 'dark'); // 'light'
+```
+
+--------------------------------
+
+TITLE: Pick Multiple Values (TypeScript)
+DESCRIPTION: This TypeScript code demonstrates how to extract multiple values from the MapStore using the pick method, which returns an array of values.
+
+SOURCE: https://github.com/ismartify/core/packages/ismartify-mapstore/src/index.ts
+
+LANGUAGE: typescript
+CODE:
+```typescript
+// Set some data
+store
+  .set('name', 'John')
+  .set('age', 30)
+  .set('email', 'john@example.com')
+  .set('city', 'New York');
+
+// Pick multiple values
+const [name, age, email] = store.pick('name', 'age', 'email');
+console.log(name, age, email); // 'John', 30, 'john@example.com'
+
+// Pick with destructuring
+const userInfo = store.pick('name', 'age');
+const [userName, userAge] = userInfo;
+```
+
+--------------------------------
+
+TITLE: Function Mixin Pattern (TypeScript)
+DESCRIPTION: This snippet shows how to add custom functions to the MapStore using the mixin method and call them later. Functions are stored with '@.' prefix to avoid conflicts.
+
+SOURCE: https://github.com/ismartify/core/packages/ismartify-mapstore/src/index.ts
+
+LANGUAGE: typescript
+CODE:
+```typescript
+// Add custom increment function
+store.mixin('increment', (self, key, step = 1) => {
+  const current = self.get(key, 0);
+  return self.set(key, current + step);
+});
+
+// Add custom updateUser function
+store.mixin('updateUser', (self, userData) => {
+  const currentUser = self.get('user', {});
+  return self.set('user', { ...currentUser, ...userData });
+});
+
+// Use the mixed-in functions
+store.set('counter', 5);
+store.call('increment', 'counter', 2); // counter becomes 7
+
+store.call('updateUser', { name: 'Bob', age: 35 });
+```
+
+--------------------------------
+
+TITLE: Exec Method for Callback Execution (TypeScript)
+DESCRIPTION: This TypeScript code shows how to use the exec method to execute callbacks with the store instance automatically passed as the first parameter, supporting arrow functions.
+
+SOURCE: https://github.com/ismartify/core/packages/ismartify-mapstore/src/index.ts
+
+LANGUAGE: typescript
+CODE:
+```typescript
+// Execute callback with store instance
+store.exec((self, multiplier) => {
+  const count = self.get('count', 0);
+  return self.set('count', count * multiplier);
+}, 2);
+
+// Complex data processing
+store.exec((self) => {
+  const numbers = [1, 2, 3, 4, 5];
+  const sum = numbers.reduce((a, b) => a + b, 0);
+  const avg = sum / numbers.length;
+  
+  return self
+    .set('numbers', numbers)
+    .set('sum', sum)
+    .set('average', avg);
+});
+```
+
+--------------------------------
+
+TITLE: Debugging with Tap Method (TypeScript)
+DESCRIPTION: This TypeScript code shows how to use the tap method for debugging MapStore state. It supports regex filtering and outputs data in a console table format.
+
+SOURCE: https://github.com/ismartify/core/packages/ismartify-mapstore/src/index.ts
+
+LANGUAGE: typescript
+CODE:
+```typescript
+// Set some test data
+store
+  .set('user.name', 'John')
+  .set('user.age', 30)
+  .set('config.theme', 'dark')
+  .set('config.language', 'en')
+  .set('debug.enabled', true);
+
+// Output all data
+store.tap();
+
+// Filter by string pattern (converted to regex)
+store.tap('^user'); // Only keys starting with 'user'
+
+// Filter by regex
+store.tap(/config|debug/); // Keys containing 'config' or 'debug'
+
+// Chain with other operations
+store.set('temp', 'value').tap('^temp').delete('temp');
+```
+
+--------------------------------
+
+TITLE: Accessing Raw Map Object (TypeScript)
+DESCRIPTION: This snippet demonstrates how to access the underlying Map object using the raw method. Use with caution as this bypasses the wrapper's interface.
+
+SOURCE: https://github.com/ismartify/core/packages/ismartify-mapstore/src/index.ts
+
+LANGUAGE: typescript
+CODE:
+```typescript
+// Get the raw Map object
+const rawMap = store.raw();
+
+// Direct Map operations (use with caution)
+rawMap.set('direct', 'value');
+console.log(rawMap.has('user')); // true
+console.log(rawMap.size); // number of entries
+
+// Iterate over entries
+for (const [key, value] of rawMap.entries()) {
+  console.log(`${key}: ${value}`);
+}
+```
+
+--------------------------------
+
+TITLE: Complete Cache System Example (TypeScript)
+DESCRIPTION: This comprehensive TypeScript example demonstrates building a complete cache system with TTL (Time To Live) functionality using MapStore mixins.
+
+SOURCE: https://github.com/ismartify/core/packages/ismartify-mapstore/README.md
+
+LANGUAGE: typescript
+CODE:
+```typescript
+import { ISmartifyMapStore } from '@ismartify/mapstore';
+
+// Create cache instance
+const cache = new ISmartifyMapStore();
+
+// Add TTL cache functionality
+cache.mixin('setWithTTL', (self, key, value, ttl = 60000) => {
+  const expiry = Date.now() + ttl;
+  return self.set(key, { value, expiry });
+});
+
+cache.mixin('getValid', (self, key) => {
+  const item = self.get(key);
+  if (!item) return null;
+  
+  if (Date.now() > item.expiry) {
+    self.delete(key);
+    return null;
+  }
+  
+  return item.value;
+});
+
+// Usage
+cache.call('setWithTTL', 'user:123', { name: 'John' }, 30000); // 30 seconds TTL
+const user = cache.call('getValid', 'user:123'); // Returns user data or null if expired
+```
+
+--------------------------------
+
+TITLE: State Management Pattern (TypeScript)
+DESCRIPTION: This TypeScript example shows how to use MapStore for application state management with custom update functions and debugging capabilities.
+
+SOURCE: https://github.com/ismartify/core/packages/ismartify-mapstore/README.md
+
+LANGUAGE: typescript
+CODE:
+```typescript
+import { ISmartifyMapStore } from '@ismartify/mapstore';
+
+// Create application state
+const appState = new ISmartifyMapStore();
+
+// Initialize state
+appState
+  .set('user', null)
+  .set('isLoading', false)
+  .set('errors', [])
+  .set('config', { theme: 'light', language: 'en' });
+
+// Add state update functions
+appState.mixin('setUser', (self, userData) => {
+  return self.set('user', userData).set('isLoading', false);
+});
+
+appState.mixin('addError', (self, error) => {
+  const errors = self.get('errors', []);
+  return self.set('errors', [...errors, error]);
+});
+
+appState.mixin('clearErrors', (self) => {
+  return self.set('errors', []);
+});
+
+// Usage
+appState.call('setUser', { id: 1, name: 'Alice' });
+appState.call('addError', 'Network timeout');
+
+// Debug in development
+if (process.env.NODE_ENV === 'development') {
+  appState.tap(); // Show all state
+}
+```

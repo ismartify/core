@@ -1,0 +1,21 @@
+{
+  "name": "playgroud",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "tsx index.ts"
+  },
+  "keywords": [],
+  "author": "ismartify@keepdb.com",
+  "license": "ISC",
+  "dependencies": {
+    "@ismartify/common": "workspace:~",
+    "@ismartify/template": "workspace:~"
+  },
+  "devDependencies": {
+    "tsx": "^4.9.0"
+  }
+}

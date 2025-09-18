@@ -1,0 +1,329 @@
+================
+CODE SNIPPETS
+================
+
+TITLE: Creating a Reactive Store Instance (TypeScript)
+DESCRIPTION: This TypeScript snippet demonstrates how to create a reactive object using Vue 3's reactive function and wrap it with ISmartifyReactive for chainable operations. The constructor validates that the passed object is reactive.
+
+SOURCE: https://github.com/ismartify/core/packages/ismartify-reactive/src/index.ts
+
+LANGUAGE: typescript
+CODE:
+```typescript
+import { reactive } from '@vue/reactivity';
+import { ISmartifyReactive } from '@ismartify/reactive';
+
+// Create reactive object
+const reactiveObj = reactive({
+  user: { name: 'John', age: 30 },
+  settings: { theme: 'dark' }
+});
+
+// Create reactive store instance
+const store = new ISmartifyReactive(reactiveObj);
+```
+
+--------------------------------
+
+TITLE: Chainable Set Operations (TypeScript)
+DESCRIPTION: This snippet shows how to use the chainable set method to update multiple nested properties in a reactive object. The set method returns 'this' to enable fluent interface.
+
+SOURCE: https://github.com/ismartify/core/packages/ismartify-reactive/src/index.ts
+
+LANGUAGE: typescript
+CODE:
+```typescript
+store
+  .set('user.age', 31)
+  .set('user.email', 'john@example.com')
+  .set('settings.notifications', true)
+  .set('settings.language', 'zh-CN');
+```
+
+--------------------------------
+
+TITLE: Getting Nested Values with Default (TypeScript)
+DESCRIPTION: This TypeScript code demonstrates how to safely retrieve nested values from the reactive store using dot notation paths, with optional default values.
+
+SOURCE: https://github.com/ismartify/core/packages/ismartify-reactive/src/index.ts
+
+LANGUAGE: typescript
+CODE:
+```typescript
+// Get existing values
+const userName = store.get('user.name'); // 'John'
+const theme = store.get('settings.theme'); // 'dark'
+
+// Get with default values
+const email = store.get('user.email', 'default@email.com');
+const volume = store.get('settings.volume', 50);
+```
+
+--------------------------------
+
+TITLE: Picking Multiple Properties (TypeScript)
+DESCRIPTION: This snippet shows how to extract multiple properties from the reactive object using the pick method, which supports both single strings and arrays of property paths.
+
+SOURCE: https://github.com/ismartify/core/packages/ismartify-reactive/src/index.ts
+
+LANGUAGE: typescript
+CODE:
+```typescript
+// Pick multiple properties
+const userInfo = store.pick(['user.name', 'user.age']);
+// Result: { 'user.name': 'John', 'user.age': 31 }
+
+// Pick single property
+const userSettings = store.pick('settings');
+// Result: { theme: 'dark', notifications: true, language: 'zh-CN' }
+```
+
+--------------------------------
+
+TITLE: Debugging with Tap Method (TypeScript)
+DESCRIPTION: This TypeScript code shows how to use the tap method for debugging reactive store state. It can either log to console by default or accept a custom handler function.
+
+SOURCE: https://github.com/ismartify/core/packages/ismartify-reactive/src/index.ts
+
+LANGUAGE: typescript
+CODE:
+```typescript
+// Default console logging
+store.tap();
+
+// Custom logging function
+store.tap((data) => {
+  console.log('Current store state:', data);
+  // Additional debugging logic...
+});
+```
+
+--------------------------------
+
+TITLE: Accessing Raw Reactive Object (TypeScript)
+DESCRIPTION: This snippet demonstrates how to access the underlying reactive object using the raw method. Use with caution as this bypasses the wrapper's interface.
+
+SOURCE: https://github.com/ismartify/core/packages/ismartify-reactive/src/index.ts
+
+LANGUAGE: typescript
+CODE:
+```typescript
+// Get the raw reactive object
+const rawObject = store.raw();
+
+// Direct manipulation (use with caution)
+rawObject.user.name = 'Jane';
+rawObject.posts = [];
+```
+
+--------------------------------
+
+TITLE: Using Exported Utility Functions (TypeScript)
+DESCRIPTION: This TypeScript code shows how to use the exported utility functions from lodash and the custom isReactive function for general object operations.
+
+SOURCE: https://github.com/ismartify/core/packages/ismartify-reactive/src/index.ts
+
+LANGUAGE: typescript
+CODE:
+```typescript
+import { get, set, pick, isReactive } from '@ismartify/reactive';
+
+// Safe property access
+const value = get(someObject, 'deep.nested.property', 'default');
+
+// Property setting
+set(targetObject, 'config.api.endpoint', 'https://api.example.com');
+
+// Property picking
+const selected = pick(sourceObject, ['name', 'email', 'age']);
+
+// Reactivity checking
+const isReactiveObj = isReactive(someObject); // true/false
+```
+
+--------------------------------
+
+TITLE: Complete Usage Example (TypeScript)
+DESCRIPTION: This comprehensive TypeScript example demonstrates a complete workflow of creating, manipulating, and accessing a reactive store with various operations.
+
+SOURCE: https://github.com/ismartify/core/packages/ismartify-reactive/README.md
+
+LANGUAGE: typescript
+CODE:
+```typescript
+import { reactive } from '@vue/reactivity';
+import { ISmartifyReactive, isReactive } from '@ismartify/reactive';
+
+// Initialize reactive data
+const appData = reactive({
+  user: {
+    profile: { name: 'John Doe', age: 30 },
+    preferences: { theme: 'dark', notifications: true }
+  },
+  ui: { sidebar: { collapsed: false } },
+  cache: {}
+});
+
+// Create store instance
+const store = new ISmartifyReactive(appData);
+
+// Chain operations
+store
+  .set('user.profile.age', 31)
+  .set('ui.sidebar.collapsed', true)
+  .set('cache.lastUpdate', Date.now())
+  .tap();
+
+// Retrieve values
+const userName = store.get('user.profile.name');
+const isSidebarCollapsed = store.get('ui.sidebar.collapsed', false);
+
+// Extract user settings
+const userPrefs = store.pick(['user.preferences.theme', 'user.preferences.notifications']);
+
+// Check reactivity
+console.log('Is reactive:', isReactive(store.raw())); // true
+```
+
+--------------------------------
+
+TITLE: Error Handling for Non-Reactive Objects (TypeScript)
+DESCRIPTION: This TypeScript snippet demonstrates the error thrown when attempting to create an ISmartifyReactive instance with a non-reactive object, ensuring type safety.
+
+SOURCE: https://github.com/ismartify/core/packages/ismartify-reactive/src/index.ts
+
+LANGUAGE: typescript
+CODE:
+```typescript
+import { ISmartifyReactive } from '@ismartify/reactive';
+
+// This will throw an error
+try {
+  const plainObject = { name: 'test' };
+  const store = new ISmartifyReactive(plainObject); // Error!
+} catch (error) {
+  console.error('Error:', error.message); // "传入的对象必须是响应式的"
+}
+
+--------------------------------
+
+TITLE: Adding Custom Methods with Mixin (TypeScript)
+DESCRIPTION: This TypeScript code demonstrates how to add custom methods to the reactive store using the mixin method. Mixins allow extending the store with custom functionality while maintaining chainability.
+
+SOURCE: https://github.com/ismartify/core/packages/ismartify-reactive/src/index.ts
+
+LANGUAGE: typescript
+CODE:
+```typescript
+// Add custom methods using mixin
+store
+  .mixin('increment', function(self, amount = 1) {
+    const current = self.get('counter');
+    self.set('counter', current + amount);
+    return self.get('counter');
+  })
+  .mixin('getStats', function(self) {
+    return {
+      counter: self.get('counter'),
+      doubled: self.get('counter') * 2
+    };
+  });
+
+// Call the mixed-in methods
+const newValue = store.call('increment', 5); // returns 5
+const stats = store.call('getStats'); // returns { counter: 5, doubled: 10 }
+```
+
+--------------------------------
+
+TITLE: Executing Complex Logic with Exec Method (TypeScript)
+DESCRIPTION: This snippet shows how to use the exec method to execute complex operations within the reactive store context. The exec method provides access to the store instance and can return computed values.
+
+SOURCE: https://github.com/ismartify/core/packages/ismartify-reactive/src/index.ts
+
+LANGUAGE: typescript
+CODE:
+```typescript
+// Execute complex business logic
+const result = store.exec((self) => {
+  const current = self.get('counter');
+  const history = self.get('history', []);
+  
+  // Perform multiple operations
+  const newValue = current + 10;
+  self.set('counter', newValue);
+  self.set('history', [...history, newValue]);
+  
+  // Return computed result
+  return {
+    previous: current,
+    current: newValue,
+    change: newValue - current
+  };
+});
+
+console.log(result); // { previous: 0, current: 10, change: 10 }
+```
+
+--------------------------------
+
+TITLE: Complete Application Example with Mixins (TypeScript)
+DESCRIPTION: This comprehensive TypeScript example demonstrates building a complete todo application using ISmartifyReactive with custom mixins for business logic, showcasing the full power of the reactive store pattern.
+
+SOURCE: https://github.com/ismartify/core/packages/ismartify-reactive/test/app-examples.test.ts
+
+LANGUAGE: typescript
+CODE:
+```typescript
+import { reactive } from '@vue/reactivity';
+import { ISmartifyReactive } from '@ismartify/reactive';
+
+// Create reactive state
+const state = reactive({
+  todos: [] as Array<{ id: number; text: string; completed: boolean }>,
+  filter: 'all',
+  nextId: 1
+});
+
+const store = new ISmartifyReactive(state);
+
+// Add business logic methods
+store
+  .mixin('addTodo', function(self, text: string) {
+    const newTodo = {
+      id: self.get('nextId'),
+      text,
+      completed: false
+    };
+    self.set('todos', [...self.get('todos'), newTodo]);
+    self.set('nextId', self.get('nextId') + 1);
+    return newTodo;
+  })
+  .mixin('toggleTodo', function(self, id: number) {
+    const todos = self.get('todos');
+    const updated = todos.map(todo =>
+      todo.id === id ? { ...todo, completed: !todo.completed } : todo
+    );
+    self.set('todos', updated);
+    return updated.find(todo => todo.id === id);
+  })
+  .mixin('getFilteredTodos', function(self) {
+    const todos = self.get('todos');
+    const filter = self.get('filter');
+    
+    switch (filter) {
+      case 'active': return todos.filter(todo => !todo.completed);
+      case 'completed': return todos.filter(todo => todo.completed);
+      default: return todos;
+    }
+  });
+
+// Use the application
+store.call('addTodo', 'Learn TypeScript');
+store.call('addTodo', 'Build reactive app');
+store.call('toggleTodo', 1);
+
+store.set('filter', 'active');
+const activeTodos = store.call('getFilteredTodos');
+console.log('Active todos:', activeTodos);
+```

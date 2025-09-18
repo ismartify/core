@@ -1,0 +1,86 @@
+Package: @ismartify/common
+Language: TypeScript (ESM/CJS)
+Exports: ISmartifyStore, ISmartifyError
+
+Usage (ESM):
+import { ISmartifyStore, ISmartifyError } from '@ismartify/common';
+
+Usage (CJS):
+const { ISmartifyStore, ISmartifyError } = require('@ismartify/common');
+
+--- ISmartifyStore ---
+Class: ISmartifyStore
+Purpose: Lightweight runtime key-value store built on Map, with mixin/functions and debug helpers.
+
+Constructor:
+new ISmartifyStore()
+  - Initializes metadata keys: __namespace, __name, __description
+
+Core methods:
+raw(): Map<string, any>
+get(key: string, def?: any): any    // returns def if key not present and def provided
+set(key: string, value: any): this  // chainable
+pick(...keys: string[]): any[]
+delete(key: string): this
+clear(): this
+has(key: string): boolean
+
+Function helpers:
+mixin(name: string, fn: Function): this
+  - Saves function under key `_mixin.${name}` with `this` bound to store on call.
+call<T extends (...args: any[]) => any>(name: string, ...args: Parameters<T>): ReturnType<T>
+  - Looks up `_mixin.${name}` and invokes it with `this` = store. Throws if missing.
+exec<T extends (self: this, ...args: any[]) => any>(callback: T, ...args: any[]): ReturnType<T>
+  - Executes callback with first param bound to store (useful for arrow functions).
+
+debug:
+tap(rule?: string | RegExp): this
+  - Console.table of entries filtered by rule (matches keys). Returns this.
+
+Notes:
+- Keys reserved: __namespace, __name, __description, _mixin.*
+- Safe chaining on set/delete/clear/tap.
+
+--- ISmartifyError ---
+Class: ISmartifyError extends Error
+Purpose: Standardized error with parsed statusCode, code, module and JSON response builder.
+
+Message format parsing:
+"[statusCode.]message[#errorCode][@module]"
+Examples:
+- "500.服务器错误#INTERNAL_ERROR@core"
+- "403.无权限#NO_PERMISSION@auth"
+- "404.资源不存在#NOT_FOUND"
+- "服务异常#UNKNOWN_ERROR"            // defaults statusCode=500, module=noname
+
+Properties:
+_IsmartifyError: true (marker)
+statusCode: number (default 500)
+code: string (default "UNKNOWN_ERROR")
+module?: string (default "noname")
+
+Methods:
+throw(): never                     // rethrows this instance
+json(stack?: boolean): {
+  success: false,
+  error: { code: string|number, message: string, module?: string, stack?: string },
+  status: number
+}
+
+Examples:
+try { new ISmartifyError('404.资源不存在#NOT_FOUND@asset').throw(); }
+catch (e) {
+  if (e && e._IsmartifyError) {
+    const payload = e.json();
+    // send payload as HTTP response body, with HTTP status e.statusCode
+  }
+}
+
+--- Build & Publish (internal) ---
+Build: pnpm -F @ismartify/common build (uses tsup)
+Publish: pnpm -F @ismartify/common npm:publish  // npm publish --registry https://registry.npmjs.org/ --access public --no-git-checks
+
+--- Constraints ---
+- No inline styles in HTML; no <style> in Vue (team convention).
+- Prefer pnpm with registry https://registry.npmmirror.com in China region.
+- Runtime agnostic; works in Node.js and modern browsers (bundlers recommended).
